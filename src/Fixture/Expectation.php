@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AppDevPanel\Testing\Scenario;
+namespace AppDevPanel\Testing\Fixture;
 
 /**
- * An expectation about collector data after a scenario runs.
+ * An expectation about collector data after a fixture runs.
  */
 final readonly class Expectation
 {

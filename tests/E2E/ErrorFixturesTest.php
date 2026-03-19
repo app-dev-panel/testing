@@ -4,29 +4,29 @@ declare(strict_types=1);
 
 namespace AppDevPanel\Testing\Tests\E2E;
 
-use AppDevPanel\Testing\Scenario\ScenarioRegistry;
+use AppDevPanel\Testing\Fixture\FixtureRegistry;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * E2E tests for error/exception scenarios.
+ * E2E tests for error/exception fixtures.
  *
  * Run: PLAYGROUND_URL=http://127.0.0.1:8102 php vendor/bin/phpunit --testsuite Scenarios --group error
  */
-#[Group('scenarios')]
+#[Group('fixtures')]
 #[Group('error')]
-final class ErrorScenariosTest extends ScenarioTestCase
+final class ErrorFixturesTest extends FixtureTestCase
 {
     public static function errorScenarioProvider(): \Generator
     {
-        foreach (ScenarioRegistry::byTag('error') as $scenario) {
-            yield $scenario->name => [$scenario];
+        foreach (FixtureRegistry::byTag('error') as $fixture) {
+            yield $fixture->name => [$fixture];
         }
     }
 
     #[DataProvider('errorScenarioProvider')]
-    public function testErrorScenario(\AppDevPanel\Testing\Scenario\Scenario $scenario): void
+    public function testErrorFixture(\AppDevPanel\Testing\Fixture\Fixture $fixture): void
     {
-        $this->runScenario($scenario);
+        $this->runFixture($fixture);
     }
 }

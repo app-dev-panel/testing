@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AppDevPanel\Testing\Command;
 
-use AppDevPanel\Testing\Runner\ScenarioResult;
-use AppDevPanel\Testing\Runner\ScenarioRunner;
-use AppDevPanel\Testing\Scenario\ScenarioRegistry;
+use AppDevPanel\Testing\Runner\FixtureResult;
+use AppDevPanel\Testing\Runner\FixtureRunner;
+use AppDevPanel\Testing\Fixture\FixtureRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -16,25 +16,25 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Run ADP test scenarios against a live playground instance.
+ * Run ADP test fixtures against a live playground instance.
  *
  * Usage:
- *   debug:scenarios http://localhost:8080
- *   debug:scenarios http://localhost:8080 --tag=core
- *   debug:scenarios http://localhost:8080 --scenario=logs:basic
+ *   debug:fixtures http://localhost:8080
+ *   debug:fixtures http://localhost:8080 --tag=core
+ *   debug:fixtures http://localhost:8080 --fixture=logs:basic
  */
-#[AsCommand(name: 'debug:scenarios', description: 'Run ADP test scenarios against a playground')]
-final class DebugScenariosCommand extends Command
+#[AsCommand(name: 'debug:fixtures', description: 'Run ADP test fixtures against a playground')]
+final class DebugFixturesCommand extends Command
 {
     protected function configure(): void
     {
         $this
             ->addArgument('base-url', InputArgument::REQUIRED, 'Playground base URL (e.g., http://localhost:8080)')
-            ->addOption('tag', 't', InputOption::VALUE_OPTIONAL, 'Run only scenarios with this tag (core, web, error, advanced)')
-            ->addOption('scenario', 's', InputOption::VALUE_OPTIONAL, 'Run a single scenario by name')
+            ->addOption('tag', 't', InputOption::VALUE_OPTIONAL, 'Run only fixtures with this tag (core, web, error, advanced)')
+            ->addOption('fixture', 's', InputOption::VALUE_OPTIONAL, 'Run a single fixture by name')
             ->addOption('retry-delay', null, InputOption::VALUE_OPTIONAL, 'Delay between retries in ms', '200')
             ->addOption('max-retries', null, InputOption::VALUE_OPTIONAL, 'Max retries for debug data fetch', '10')
-            ->addOption('list', 'l', InputOption::VALUE_NONE, 'List available scenarios without running them');
+            ->addOption('list', 'l', InputOption::VALUE_NONE, 'List available fixtures without running them');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,26 +46,26 @@ final class DebugScenariosCommand extends Command
             return $this->listScenarios($io);
         }
 
-        $scenarios = $this->resolveScenarios($input, $io);
-        if ($scenarios === null) {
+        $fixtures = $this->resolveScenarios($input, $io);
+        if ($fixtures === null) {
             return Command::FAILURE;
         }
-        if ($scenarios === []) {
-            $io->warning('No scenarios to run.');
+        if ($fixtures === []) {
+            $io->warning('No fixtures to run.');
             return Command::SUCCESS;
         }
 
         $io->title(sprintf('ADP Test Scenarios — %s', $baseUrl));
-        $io->text(sprintf('Running %d scenario(s)...', count($scenarios)));
+        $io->text(sprintf('Running %d fixture(s)...', count($fixtures)));
         $io->newLine();
 
-        $runner = new ScenarioRunner(
+        $runner = new FixtureRunner(
             $baseUrl,
             (int) $input->getOption('retry-delay'),
             (int) $input->getOption('max-retries'),
         );
 
-        $results = $runner->runAll($scenarios);
+        $results = $runner->runAll($fixtures);
 
         return $this->renderResults($io, $output, $results);
     }
@@ -74,14 +74,14 @@ final class DebugScenariosCommand extends Command
     {
         $io->title('Available Test Scenarios');
 
-        foreach (ScenarioRegistry::tags() as $tag) {
-            $scenarios = ScenarioRegistry::byTag($tag);
-            $io->section(sprintf('Tag: %s (%d scenarios)', $tag, count($scenarios)));
+        foreach (FixtureRegistry::tags() as $tag) {
+            $fixtures = FixtureRegistry::byTag($tag);
+            $io->section(sprintf('Tag: %s (%d fixtures)', $tag, count($fixtures)));
 
             $rows = [];
-            foreach ($scenarios as $scenario) {
-                $collectors = implode(', ', array_keys($scenario->expectations));
-                $rows[] = [$scenario->name, $scenario->method . ' ' . $scenario->endpoint, $collectors];
+            foreach ($fixtures as $fixture) {
+                $collectors = implode(', ', array_keys($fixture->expectations));
+                $rows[] = [$fixture->name, $fixture->method . ' ' . $fixture->endpoint, $collectors];
             }
 
             $io->table(['Name', 'Endpoint', 'Expected Collectors'], $rows);
@@ -92,34 +92,34 @@ final class DebugScenariosCommand extends Command
 
     private function resolveScenarios(InputInterface $input, SymfonyStyle $io): ?array
     {
-        $scenarioName = $input->getOption('scenario');
+        $fixtureName = $input->getOption('fixture');
         $tag = $input->getOption('tag');
 
-        if ($scenarioName !== null) {
-            $all = ScenarioRegistry::all();
-            foreach ($all as $scenario) {
-                if ($scenario->name === $scenarioName) {
-                    return [$scenario];
+        if ($fixtureName !== null) {
+            $all = FixtureRegistry::all();
+            foreach ($all as $fixture) {
+                if ($fixture->name === $fixtureName) {
+                    return [$fixture];
                 }
             }
-            $io->error(sprintf('Scenario "%s" not found.', $scenarioName));
+            $io->error(sprintf('Fixture "%s" not found.', $fixtureName));
             return null;
         }
 
         if ($tag !== null) {
-            $scenarios = ScenarioRegistry::byTag($tag);
-            if ($scenarios === []) {
-                $io->error(sprintf('No scenarios found for tag "%s". Available tags: %s', $tag, implode(', ', ScenarioRegistry::tags())));
+            $fixtures = FixtureRegistry::byTag($tag);
+            if ($fixtures === []) {
+                $io->error(sprintf('No fixtures found for tag "%s". Available tags: %s', $tag, implode(', ', FixtureRegistry::tags())));
                 return null;
             }
-            return $scenarios;
+            return $fixtures;
         }
 
-        return ScenarioRegistry::all();
+        return FixtureRegistry::all();
     }
 
     /**
-     * @param list<ScenarioResult> $results
+     * @param list<FixtureResult> $results
      */
     private function renderResults(SymfonyStyle $io, OutputInterface $output, array $results): int
     {
@@ -130,16 +130,16 @@ final class DebugScenariosCommand extends Command
         foreach ($results as $result) {
             if ($result->error !== null) {
                 $skipped++;
-                $io->text(sprintf('  <fg=yellow>SKIP</> %s — %s', $result->scenario->name, $result->error));
+                $io->text(sprintf('  <fg=yellow>SKIP</> %s — %s', $result->fixture->name, $result->error));
                 continue;
             }
 
             if ($result->passed) {
                 $passed++;
-                $io->text(sprintf('  <fg=green>PASS</> %s', $result->scenario->name));
+                $io->text(sprintf('  <fg=green>PASS</> %s', $result->fixture->name));
             } else {
                 $failed++;
-                $io->text(sprintf('  <fg=red>FAIL</> %s', $result->scenario->name));
+                $io->text(sprintf('  <fg=red>FAIL</> %s', $result->fixture->name));
 
                 foreach ($result->assertions as $assertion) {
                     if (!$assertion->passed) {

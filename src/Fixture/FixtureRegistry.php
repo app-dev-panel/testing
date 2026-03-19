@@ -2,45 +2,45 @@
 
 declare(strict_types=1);
 
-namespace AppDevPanel\Testing\Scenario;
+namespace AppDevPanel\Testing\Fixture;
 
 /**
- * Central registry of all ADP test scenarios.
+ * Central registry of all ADP test fixtures.
  *
- * Scenarios are organized by collector feature. Each scenario defines:
+ * Fixtures are organized by collector feature. Each fixture defines:
  * - An endpoint to call (relative to the playground base URL)
  * - Expected collector data after the request completes
  *
- * All playgrounds must implement the `/test/scenarios/*` endpoints.
+ * All playgrounds must implement the `/test/fixtures/*` endpoints.
  * The endpoint contract is defined here; each adapter wires it to its framework.
  */
-final class ScenarioRegistry
+final class FixtureRegistry
 {
     /**
-     * @return list<Scenario>
+     * @return list<Fixture>
      */
     public static function all(): array
     {
         return [
-            ...self::coreScenarios(),
-            ...self::webScenarios(),
-            ...self::errorScenarios(),
-            ...self::advancedScenarios(),
+            ...self::coreFixtures(),
+            ...self::webFixtures(),
+            ...self::errorFixtures(),
+            ...self::advancedFixtures(),
         ];
     }
 
     /**
-     * Get scenarios by tag (for selective runs).
+     * Get fixtures by tag (for selective runs).
      *
-     * @return list<Scenario>
+     * @return list<Fixture>
      */
     public static function byTag(string $tag): array
     {
         return match ($tag) {
-            'core' => self::coreScenarios(),
-            'web' => self::webScenarios(),
-            'error' => self::errorScenarios(),
-            'advanced' => self::advancedScenarios(),
+            'core' => self::coreFixtures(),
+            'web' => self::webFixtures(),
+            'error' => self::errorFixtures(),
+            'advanced' => self::advancedFixtures(),
             default => [],
         };
     }
@@ -54,17 +54,17 @@ final class ScenarioRegistry
     }
 
     /**
-     * Core collector scenarios — must work in every adapter.
+     * Core collector fixtures — must work in every adapter.
      *
-     * @return list<Scenario>
+     * @return list<Fixture>
      */
-    private static function coreScenarios(): array
+    private static function coreFixtures(): array
     {
         return [
             // === Logging ===
-            new Scenario(
+            new Fixture(
                 name: 'logs:basic',
-                endpoint: '/test/scenarios/logs',
+                endpoint: '/test/fixtures/logs',
                 expectations: [
                     'logger' => [
                         Expectation::notEmpty(),
@@ -78,9 +78,9 @@ final class ScenarioRegistry
             ),
 
             // === Logging with context ===
-            new Scenario(
+            new Fixture(
                 name: 'logs:context',
-                endpoint: '/test/scenarios/logs-context',
+                endpoint: '/test/fixtures/logs-context',
                 expectations: [
                     'logger' => [
                         Expectation::notEmpty(),
@@ -92,9 +92,9 @@ final class ScenarioRegistry
             ),
 
             // === Events ===
-            new Scenario(
+            new Fixture(
                 name: 'events:basic',
-                endpoint: '/test/scenarios/events',
+                endpoint: '/test/fixtures/events',
                 expectations: [
                     'event' => [
                         Expectation::notEmpty(),
@@ -104,9 +104,9 @@ final class ScenarioRegistry
             ),
 
             // === VarDumper ===
-            new Scenario(
+            new Fixture(
                 name: 'var-dumper:basic',
-                endpoint: '/test/scenarios/dump',
+                endpoint: '/test/fixtures/dump',
                 expectations: [
                     'var-dumper' => [
                         Expectation::notEmpty(),
@@ -116,9 +116,9 @@ final class ScenarioRegistry
             ),
 
             // === Timeline ===
-            new Scenario(
+            new Fixture(
                 name: 'timeline:basic',
-                endpoint: '/test/scenarios/timeline',
+                endpoint: '/test/fixtures/timeline',
                 expectations: [
                     'timeline' => [
                         Expectation::notEmpty(),
@@ -130,17 +130,17 @@ final class ScenarioRegistry
     }
 
     /**
-     * Web context scenarios — request/response and app info.
+     * Web context fixtures — request/response and app info.
      *
-     * @return list<Scenario>
+     * @return list<Fixture>
      */
-    private static function webScenarios(): array
+    private static function webFixtures(): array
     {
         return [
             // === Request collector ===
-            new Scenario(
+            new Fixture(
                 name: 'request:basic',
-                endpoint: '/test/scenarios/request-info',
+                endpoint: '/test/fixtures/request-info',
                 expectations: [
                     'request' => [
                         Expectation::notEmpty(),
@@ -149,9 +149,9 @@ final class ScenarioRegistry
             ),
 
             // === Web app info (timing, memory) ===
-            new Scenario(
+            new Fixture(
                 name: 'web:app-info',
-                endpoint: '/test/scenarios/request-info',
+                endpoint: '/test/fixtures/request-info',
                 expectations: [
                     'web' => [
                         Expectation::notEmpty(),
@@ -162,31 +162,31 @@ final class ScenarioRegistry
     }
 
     /**
-     * Error/exception scenarios.
+     * Error/exception fixtures.
      *
-     * @return list<Scenario>
+     * @return list<Fixture>
      */
-    private static function errorScenarios(): array
+    private static function errorFixtures(): array
     {
         return [
             // === Exception collector ===
-            new Scenario(
+            new Fixture(
                 name: 'exception:runtime',
-                endpoint: '/test/scenarios/exception',
+                endpoint: '/test/fixtures/exception',
                 expectations: [
                     'exception' => [
                         Expectation::notEmpty(),
                         Expectation::countGte(1),
                         Expectation::fieldEquals('0.class', 'RuntimeException'),
-                        Expectation::fieldContains('0.message', 'ADP test scenario exception'),
+                        Expectation::fieldContains('0.message', 'ADP test fixture exception'),
                     ],
                 ],
             ),
 
             // === Exception with previous ===
-            new Scenario(
+            new Fixture(
                 name: 'exception:chained',
-                endpoint: '/test/scenarios/exception-chained',
+                endpoint: '/test/fixtures/exception-chained',
                 expectations: [
                     'exception' => [
                         Expectation::notEmpty(),
@@ -200,17 +200,17 @@ final class ScenarioRegistry
     }
 
     /**
-     * Advanced scenarios — multiple collectors interacting.
+     * Advanced fixtures — multiple collectors interacting.
      *
-     * @return list<Scenario>
+     * @return list<Fixture>
      */
-    private static function advancedScenarios(): array
+    private static function advancedFixtures(): array
     {
         return [
             // === Multiple collectors in one request ===
-            new Scenario(
+            new Fixture(
                 name: 'multi:logs-and-events',
-                endpoint: '/test/scenarios/multi',
+                endpoint: '/test/fixtures/multi',
                 expectations: [
                     'logger' => [
                         Expectation::notEmpty(),
@@ -227,9 +227,9 @@ final class ScenarioRegistry
             ),
 
             // === Heavy logging — many entries ===
-            new Scenario(
+            new Fixture(
                 name: 'logs:heavy',
-                endpoint: '/test/scenarios/logs-heavy',
+                endpoint: '/test/fixtures/logs-heavy',
                 expectations: [
                     'logger' => [
                         Expectation::notEmpty(),
@@ -238,22 +238,22 @@ final class ScenarioRegistry
                 ],
             ),
 
-            // === HTTP client ===
-            new Scenario(
+            // === HTTP client (GET, POST JSON, PUT, DELETE, OPTIONS, POST multipart) ===
+            new Fixture(
                 name: 'http-client:basic',
-                endpoint: '/test/scenarios/http-client',
+                endpoint: '/test/fixtures/http-client',
                 expectations: [
                     'http' => [
                         Expectation::notEmpty(),
-                        Expectation::countGte(1),
+                        Expectation::countGte(6),
                     ],
                 ],
             ),
 
             // === Filesystem stream ===
-            new Scenario(
+            new Fixture(
                 name: 'filesystem:basic',
-                endpoint: '/test/scenarios/filesystem',
+                endpoint: '/test/fixtures/filesystem',
                 expectations: [
                     'fs_stream' => [
                         Expectation::notEmpty(),

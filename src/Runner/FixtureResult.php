@@ -5,27 +5,27 @@ declare(strict_types=1);
 namespace AppDevPanel\Testing\Runner;
 
 use AppDevPanel\Testing\Assertion\AssertionResult;
-use AppDevPanel\Testing\Scenario\Scenario;
+use AppDevPanel\Testing\Fixture\Fixture;
 
-final readonly class ScenarioResult
+final readonly class FixtureResult
 {
     /**
      * @param list<AssertionResult> $assertions
      */
     public function __construct(
-        public Scenario $scenario,
+        public Fixture $fixture,
         public bool $passed,
         public array $assertions,
         public ?string $error = null,
         public ?string $debugId = null,
     ) {}
 
-    public static function skip(Scenario $scenario, string $reason): self
+    public static function skip(Fixture $fixture, string $reason): self
     {
-        return new self($scenario, false, [], error: $reason);
+        return new self($fixture, false, [], error: $reason);
     }
 
-    public static function fromAssertions(Scenario $scenario, array $assertions, ?string $debugId): self
+    public static function fromAssertions(Fixture $fixture, array $assertions, ?string $debugId): self
     {
         $allPassed = true;
         foreach ($assertions as $assertion) {
@@ -35,6 +35,6 @@ final readonly class ScenarioResult
             }
         }
 
-        return new self($scenario, $allPassed, $assertions, debugId: $debugId);
+        return new self($fixture, $allPassed, $assertions, debugId: $debugId);
     }
 }

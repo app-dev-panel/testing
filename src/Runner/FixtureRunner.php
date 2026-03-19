@@ -6,19 +6,19 @@ namespace AppDevPanel\Testing\Runner;
 
 use AppDevPanel\Testing\Assertion\AssertionResult;
 use AppDevPanel\Testing\Assertion\ExpectationEvaluator;
-use AppDevPanel\Testing\Scenario\Scenario;
+use AppDevPanel\Testing\Fixture\Fixture;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 /**
- * Runs a scenario against a live playground instance:
+ * Runs a fixture against a live playground instance:
  * 1. GET /debug/api to capture current entry count
- * 2. Hit the scenario endpoint
+ * 2. Hit the fixture endpoint
  * 3. GET /debug/api to find the new entry (by X-Debug-Id header or by diff)
  * 4. GET /debug/api/view/{id} to get full collector data
  * 5. Evaluate expectations
  */
-final class ScenarioRunner
+final class FixtureRunner
 {
     private readonly Client $client;
     private readonly ExpectationEvaluator $evaluator;
@@ -36,44 +36,44 @@ final class ScenarioRunner
         $this->evaluator = new ExpectationEvaluator();
     }
 
-    public function run(Scenario $scenario): ScenarioResult
+    public function run(Fixture $fixture): FixtureResult
     {
         try {
-            return $this->doRun($scenario);
+            return $this->doRun($fixture);
         } catch (GuzzleException $e) {
-            return ScenarioResult::skip($scenario, sprintf('HTTP error: %s', $e->getMessage()));
+            return FixtureResult::skip($fixture, sprintf('HTTP error: %s', $e->getMessage()));
         } catch (\Throwable $e) {
-            return ScenarioResult::skip($scenario, sprintf('Error: %s', $e->getMessage()));
+            return FixtureResult::skip($fixture, sprintf('Error: %s', $e->getMessage()));
         }
     }
 
     /**
-     * @param list<Scenario> $scenarios
+     * @param list<Fixture> $fixtures
      *
-     * @return list<ScenarioResult>
+     * @return list<FixtureResult>
      */
-    public function runAll(array $scenarios): array
+    public function runAll(array $fixtures): array
     {
         $results = [];
-        foreach ($scenarios as $scenario) {
-            $results[] = $this->run($scenario);
+        foreach ($fixtures as $fixture) {
+            $results[] = $this->run($fixture);
         }
 
         return $results;
     }
 
-    private function doRun(Scenario $scenario): ScenarioResult
+    private function doRun(Fixture $fixture): FixtureResult
     {
-        // Step 1: Hit the scenario endpoint
+        // Step 1: Hit the fixture endpoint
         $options = [];
-        if ($scenario->headers !== []) {
-            $options['headers'] = $scenario->headers;
+        if ($fixture->headers !== []) {
+            $options['headers'] = $fixture->headers;
         }
-        if ($scenario->body !== null) {
-            $options['body'] = $scenario->body;
+        if ($fixture->body !== null) {
+            $options['body'] = $fixture->body;
         }
 
-        $response = $this->client->request($scenario->method, $scenario->endpoint, $options);
+        $response = $this->client->request($fixture->method, $fixture->endpoint, $options);
 
         // Try to get debug ID from response header
         $debugId = $response->getHeaderLine('X-Debug-Id');
@@ -84,19 +84,19 @@ final class ScenarioRunner
         }
 
         if ($debugId === null || $debugId === '') {
-            return ScenarioResult::skip($scenario, 'Could not determine debug entry ID');
+            return FixtureResult::skip($fixture, 'Could not determine debug entry ID');
         }
 
         // Step 3: Fetch full debug data with retries (storage write may be async)
         $debugData = $this->fetchDebugData($debugId);
         if ($debugData === null) {
-            return ScenarioResult::skip($scenario, sprintf('Could not fetch debug data for ID: %s', $debugId));
+            return FixtureResult::skip($fixture, sprintf('Could not fetch debug data for ID: %s', $debugId));
         }
 
         // Step 4: Evaluate expectations
-        $assertions = $this->evaluateExpectations($scenario, $debugData);
+        $assertions = $this->evaluateExpectations($fixture, $debugData);
 
-        return ScenarioResult::fromAssertions($scenario, $assertions, $debugId);
+        return FixtureResult::fromAssertions($fixture, $assertions, $debugId);
     }
 
     private function findLatestDebugId(): ?string
@@ -140,11 +140,11 @@ final class ScenarioRunner
     /**
      * @return list<AssertionResult>
      */
-    private function evaluateExpectations(Scenario $scenario, array $debugData): array
+    private function evaluateExpectations(Fixture $fixture, array $debugData): array
     {
         $allAssertions = [];
 
-        foreach ($scenario->expectations as $collectorName => $expectations) {
+        foreach ($fixture->expectations as $collectorName => $expectations) {
             // Find the collector in the debug data by matching the collector name
             $collectorData = $this->findCollectorData($debugData, $collectorName);
 

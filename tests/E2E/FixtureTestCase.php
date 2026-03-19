@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace AppDevPanel\Testing\Tests\E2E;
 
-use AppDevPanel\Testing\Runner\ScenarioRunner;
-use AppDevPanel\Testing\Scenario\Scenario;
+use AppDevPanel\Testing\Runner\FixtureRunner;
+use AppDevPanel\Testing\Fixture\Fixture;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Base class for HTTP-based E2E scenario tests.
+ * Base class for HTTP-based E2E fixture tests.
  *
- * Runs test scenarios against a live playground server.
+ * Runs test fixtures against a live playground server.
  * Requires a running server at PLAYGROUND_URL env (default: http://127.0.0.1:8080).
  *
  * Usage:
  *   PLAYGROUND_URL=http://127.0.0.1:8102 php vendor/bin/phpunit --testsuite Scenarios
  */
-abstract class ScenarioTestCase extends TestCase
+abstract class FixtureTestCase extends TestCase
 {
-    protected static ScenarioRunner $runner;
+    protected static FixtureRunner $runner;
     protected static string $baseUrl;
 
     public static function setUpBeforeClass(): void
@@ -27,7 +27,7 @@ abstract class ScenarioTestCase extends TestCase
         parent::setUpBeforeClass();
 
         self::$baseUrl = rtrim((string) getenv('PLAYGROUND_URL') ?: 'http://127.0.0.1:8080', '/');
-        self::$runner = new ScenarioRunner(self::$baseUrl, retryDelayMs: 300, maxRetries: 15);
+        self::$runner = new FixtureRunner(self::$baseUrl, retryDelayMs: 300, maxRetries: 15);
 
         // Verify the server is reachable
         try {
@@ -47,12 +47,12 @@ abstract class ScenarioTestCase extends TestCase
         }
     }
 
-    protected function runScenario(Scenario $scenario): void
+    protected function runFixture(Fixture $fixture): void
     {
-        $result = self::$runner->run($scenario);
+        $result = self::$runner->run($fixture);
 
         if ($result->error !== null) {
-            self::markTestSkipped(sprintf('Scenario skipped: %s', $result->error));
+            self::markTestSkipped(sprintf('Fixture skipped: %s', $result->error));
         }
 
         $failures = [];
@@ -65,8 +65,8 @@ abstract class ScenarioTestCase extends TestCase
         self::assertTrue(
             $result->passed,
             sprintf(
-                "Scenario '%s' failed (debug ID: %s):\n  - %s",
-                $scenario->name,
+                "Fixture '%s' failed (debug ID: %s):\n  - %s",
+                $fixture->name,
                 $result->debugId ?? 'unknown',
                 implode("\n  - ", $failures),
             ),
