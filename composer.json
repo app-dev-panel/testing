@@ -1,0 +1,33 @@
+{
+    "name": "app-dev-panel/testing",
+    "type": "library",
+    "description": "ADP Testing — fixture definitions and runner for verifying collectors across all framework adapters",
+    "keywords": [
+        "debug",
+        "debug-panel",
+        "testing",
+        "fixtures",
+        "e2e",
+        "integration-testing",
+        "quality-assurance",
+        "ai",
+        "developer-tools",
+        "devtools",
+        "app-dev-panel",
+        "adp",
+        "application-development-panel",
+        "development-server"
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^8.4",
+        "guzzlehttp/guzzle": "^7.5",
+        "guzzlehttp/psr7": "^2.4",
+        "symfony/console": "^6.4|^7.0|^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AppDevPanel\\Testing\\": "src"
+        }
+    }
+}
