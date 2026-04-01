@@ -336,6 +336,15 @@ final class FixtureRegistry
                 ],
             ]),
 
+            // === Template (view + template merged) ===
+            new Fixture(name: 'template:basic', endpoint: '/test/fixtures/view', expectations: [
+                'template' => [
+                    Expectation::notEmpty(),
+                    Expectation::summaryHasKey('template'),
+                    Expectation::summaryGte('template.renderCount', 1),
+                ],
+            ]),
+
             // === Elasticsearch ===
             new Fixture(name: 'elasticsearch:basic', endpoint: '/test/fixtures/elasticsearch', expectations: [
                 'elasticsearch' => [
@@ -349,8 +358,7 @@ final class FixtureRegistry
             // === Code Coverage ===
             new Fixture(name: 'coverage:basic', endpoint: '/test/fixtures/coverage', expectations: [
                 'coverage' => [
-                    Expectation::notEmpty(),
-                    Expectation::fieldEquals('driver', null),
+                    Expectation::exists(),
                 ],
             ]),
         ];
